@@ -37,4 +37,4 @@ The system uses a **Random Forest Regressor** to predict shipping lead times and
 ### 📦 How to Run Locally
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Vipsa2207/ Nassau-Candy-Supply-Chain-Optimizer.git
+   git clone https://github.com/Vipsa2207/Nassau-Candy-Supply-Chain-Optimizer.git
