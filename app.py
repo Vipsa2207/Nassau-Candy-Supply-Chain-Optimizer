@@ -110,6 +110,7 @@ with st.sidebar:
     st.markdown("---")
     
     selected_product = st.selectbox("📦 Product selector", sorted(df['Product Name'].unique()))
+    st.caption("The product changes the estimated profit only. It does not change the predicted lead time or which factory is recommended.")
     selected_region = st.selectbox("📍 Region selector", sorted(list(state_coords.keys())))
     ship_mode = st.selectbox("🚚 Ship mode filter", ["Standard Class", "First Class", "Second Class", "Same Day"])
     
@@ -176,10 +177,11 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # --- KPI STRIP ---
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Lead Time Reduction (%)", "18.4% 📉")
-k2.metric("Profit Impact Stability", f"${round(best_f['Profit'], 2)} 💰")
-k3.metric("Scenario Confidence Score", "92% ✅")
-k4.metric("Recommendation Coverage", "100% 🌎")
+k1.metric("Recommended Factory", best_f['Factory'])
+k2.metric("Predicted Lead Time", f"{best_f['Lead Time']:.1f} days")
+k3.metric("Distance to Region", f"{best_f['Distance']:,.0f} km")
+k4.metric("Estimated Profit*", f"${best_f['Profit']:,.2f}")
+st.caption("*Estimated profit = the product's average gross profit minus an assumed shipping cost of $0.05 per km. The rate is an assumption, not a value from the data.")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -241,6 +243,7 @@ with t3:
     else:
         st.success("✅ **Configuration Verified:** Strategy provides optimal operational and financial stability.")
     
+    st.caption("Alerts use the assumed $0.05 per km shipping cost. At that rate most long routes show a negative estimated profit, so treat these alerts as a warning about cost, not a measured loss.")
     st.markdown("<br>", unsafe_allow_html=True)
     fig_risk, ax_risk = plt.subplots(figsize=(16, 6))
     sns.barplot(data=res_df.sort_values('Profit'), x="Factory", y="Profit", palette="crest", ax=ax_risk)
@@ -262,7 +265,8 @@ with t4:
         sns.histplot(df['Lead Time'], kde=True, color="#3b82f6", ax=ax_dist)
         st.pyplot(fig_dist)
     with c_col6:
-        st.info(f"**MAE:** 0.88 Days | **RMSE:** 0.92 Days | **R2 Score:** 0.59")
+        st.info("**Random Forest on a 20% test set:** MAE 0.87 days | RMSE 1.11 days | R² 0.59")
+        st.caption("A simple average lead time per ship mode scores MAE 0.82 days and R² 0.66, so ship mode explains most of the variation. Full comparison in train_model.ipynb.")
         fig_box, ax_box = plt.subplots(figsize=(8, 4))
         sns.boxplot(data=df, x="Ship Mode", y="Lead Time", palette="Blues", ax=ax_box)
         st.pyplot(fig_box)
