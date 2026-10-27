@@ -225,8 +225,13 @@ with t1:
             width="stretch", hide_index=True)
     with c_col2:
         st.success(f"Strategy: Optimal Performance via {best_f['Factory']}")
-        fig_reco = px.bar(res_df, x='Factory', y='Lead Time', color='Profit', template='plotly_dark', color_continuous_scale='Blues')
-        fig_reco.update_layout(height=380, margin=dict(l=0, r=0, t=0, b=0))
+        bar_df = res_df.sort_values('Profit', ascending=False).assign(
+            Status=lambda d: np.where(d['Factory'] == best_f['Factory'], 'Recommended', 'Other'))
+        fig_reco = px.bar(bar_df, x='Factory', y='Profit', color='Status', template='plotly_dark',
+                          color_discrete_map={'Recommended': '#3b82f6', 'Other': '#475569'},
+                          labels={'Profit': 'Estimated profit ($)'},
+                          title='Estimated profit by factory (assumed $0.05/km)')
+        fig_reco.update_layout(height=380, margin=dict(l=0, r=0, t=40, b=0), showlegend=False)
         st.plotly_chart(fig_reco, width="stretch")
 
 with t2:
@@ -251,12 +256,20 @@ with t2:
         )
         st.plotly_chart(fig_map, width="stretch")
     with c_col4:
-        plt.style.use('dark_background')
-        fig, ax = plt.subplots(figsize=(6, 7.2))
-        sns.regplot(data=res_df, x="Distance", y="Lead Time", color="#3b82f6", ax=ax)
-        ax.set_facecolor('#0f172a')
-        fig.patch.set_facecolor('#0f172a')
-        st.pyplot(fig)
+        plt.style.use('dark_background')  # keeps the later matplotlib charts dark
+        orders = df.dropna(subset=['Distance_km'])
+        r = orders['Distance_km'].corr(orders['Lead Time'])
+        slope, intercept = np.polyfit(orders['Distance_km'], orders['Lead Time'], 1)
+        x_line = np.array([orders['Distance_km'].min(), orders['Distance_km'].max()])
+        fig_corr = px.scatter(orders, x='Distance_km', y='Lead Time', opacity=0.35, template='plotly_dark',
+                              labels={'Distance_km': 'Distance, factory to customer (km)', 'Lead Time': 'Lead time (days)'},
+                              title=f"Distance doesn't predict lead time (r = {r:.3f})")
+        fig_corr.update_traces(marker=dict(color='#3b82f6', size=6))
+        fig_corr.add_scatter(x=x_line, y=slope * x_line + intercept, mode='lines',
+                             line=dict(color='#f8fafc', width=2), name='Trend')
+        fig_corr.update_layout(height=480, showlegend=False, margin=dict(l=0, r=0, t=40, b=0))
+        st.plotly_chart(fig_corr, width="stretch")
+        st.caption(f"All {len(orders):,} orders. The trend line is almost flat: distance explains almost none of the variation in lead time.")
 
 with t3:
     st.markdown('<div class="section-header">🛡️ Risk & Impact Panel</div>', unsafe_allow_html=True)
