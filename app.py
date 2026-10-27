@@ -29,8 +29,19 @@ st.markdown("""
     div[data-testid="stMetric"] {
         background: #1e293b;
         border: 1px solid #334155;
-        padding: 20px;
+        padding: 16px 20px;
         border-radius: 10px;
+    }
+    div[data-testid="stMetricLabel"] p {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    div[data-testid="stMetricValue"] {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #f8fafc;
     }
 
     /* Uniform Title Styling - Ensures horizontal alignment */
@@ -65,6 +76,13 @@ st.markdown("""
     section[data-testid="stSidebar"] {
         background-color: #111827;
         border-right: 1px solid #334155;
+    }
+
+    /* Sidebar dropdowns: visible box on the dark sidebar */
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -109,8 +127,9 @@ with st.sidebar:
     st.title("Optimization Console")
     st.markdown("---")
     
-    selected_product = st.selectbox("📦 Product selector", sorted(df['Product Name'].unique()))
-    st.caption("The product changes the estimated profit only. It does not change the predicted lead time or which factory is recommended.")
+    selected_product = st.selectbox(
+        "📦 Product selector", sorted(df['Product Name'].unique()),
+        help="The product changes the estimated profit only. It does not change the predicted lead time or which factory is recommended.")
     selected_region = st.selectbox("📍 Region selector", sorted(list(state_coords.keys())))
     ship_mode = st.selectbox("🚚 Ship mode filter", ["Standard Class", "First Class", "Second Class", "Same Day"])
     
@@ -180,7 +199,8 @@ k1, k2, k3, k4 = st.columns(4)
 k1.metric("Recommended Factory", best_f['Factory'])
 k2.metric("Predicted Lead Time", f"{best_f['Lead Time']:.1f} days")
 k3.metric("Distance to Region", f"{best_f['Distance']:,.0f} km")
-k4.metric("Estimated Profit*", f"${best_f['Profit']:,.2f}")
+profit = best_f['Profit']
+k4.metric("Estimated Profit*", f"{'−' if profit < 0 else ''}${abs(profit):,.2f}")
 st.caption("*Estimated profit = the product's average gross profit minus an assumed shipping cost of $0.05 per km. The rate is an assumption, not a value from the data.")
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -197,7 +217,12 @@ with t1:
     # ROW 2: Level Content
     c_col1, c_col2 = st.columns([1, 1.2], gap="large")
     with c_col1:
-        st.dataframe(res_df[['Factory', 'Lead Time', 'Distance', 'Profit']].style.background_gradient(cmap='Blues_r', subset=['Lead Time']), width="stretch")
+        table = res_df[['Factory', 'Lead Time', 'Distance', 'Profit']].rename(
+            columns={'Lead Time': 'Lead Time (days)', 'Distance': 'Distance (km)', 'Profit': 'Est. Profit ($)'})
+        st.dataframe(
+            table.style.background_gradient(cmap='Blues_r', subset=['Lead Time (days)'])
+                 .format({'Lead Time (days)': '{:.1f}', 'Distance (km)': '{:,.0f}', 'Est. Profit ($)': '{:,.2f}'}),
+            width="stretch", hide_index=True)
     with c_col2:
         st.success(f"Strategy: Optimal Performance via {best_f['Factory']}")
         fig_reco = px.bar(res_df, x='Factory', y='Lead Time', color='Profit', template='plotly_dark', color_continuous_scale='Blues')
